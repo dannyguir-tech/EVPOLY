@@ -210,29 +210,29 @@ async fn health_handler() -> Json<serde_json::Value> {
 async fn discovery_handler(State(state): State<AppState>) -> Json<DiscoveryResponse> {
     Json(discovery_response(
         state.config.as_ref(),
-        (*state.discovered).as_ref().clone(),
+        state.discovered.as_ref().clone(),
         None,
     ))
 }
 
 async fn scan_handler(State(state): State<AppState>) -> impl IntoResponse {
     match state.monitor.fetch_market_data().await {
-        Ok(snapshot) => (StatusCode::OK, Json(snapshot_view(snapshot)).into_response()),
+        Ok(snapshot) => (StatusCode::OK, Json(snapshot_view(snapshot))).into_response(),
         Err(err) => {
             warn!("Scan snapshot failed: {}", err);
             (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(ErrorResponse {
                     error: err.to_string(),
-                })
-                .into_response(),
+                }),
             )
+                .into_response()
         }
     }
 }
 
 async fn state_handler(State(state): State<AppState>) -> impl IntoResponse {
-    let discovery = discovery_response(state.config.as_ref(), (*state.discovered).as_ref().clone(), None);
+    let discovery = discovery_response(state.config.as_ref(), state.discovered.as_ref().clone(), None);
 
     match state.monitor.fetch_market_data().await {
         Ok(snapshot) => (
@@ -241,9 +241,9 @@ async fn state_handler(State(state): State<AppState>) -> impl IntoResponse {
                 discovery,
                 scan: Some(snapshot_view(snapshot)),
                 scan_error: None,
-            })
+            }),
+        )
             .into_response(),
-        ),
         Err(err) => {
             warn!("State snapshot scan failed: {}", err);
             (
@@ -252,9 +252,9 @@ async fn state_handler(State(state): State<AppState>) -> impl IntoResponse {
                     discovery,
                     scan: None,
                     scan_error: Some(err.to_string()),
-                })
-                .into_response(),
+                }),
             )
+                .into_response()
         }
     }
 }
